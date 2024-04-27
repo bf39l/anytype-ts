@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Title, Label, IconObject, ObjectName, Button } from 'Component';
-import { analytics, C, UtilFile, I, translate, UtilCommon, UtilData, Renderer } from 'Lib';
+import { analytics, C, UtilFile, I, translate, UtilCommon, UtilData, Renderer, Action } from 'Lib';
 import { observer } from 'mobx-react';
 import { commonStore, popupStore } from 'Store';
 
@@ -55,6 +55,7 @@ const PopupSettingsPageDataManagement = observer(class PopupSettingsPageStorageI
 						</div>
 						<div className="side right">
 							<Button color="blank" className="c28" text={translate(`commonOpen`)} onClick={this.onOpenDataLocation} />
+							<Button color="blank" className="c28" text={translate(`commonChange`)} onClick={this.onChangeDataLocation.bind(this)} />
 						</div>
 					</div>
                 </div>
@@ -110,6 +111,43 @@ const PopupSettingsPageDataManagement = observer(class PopupSettingsPageStorageI
 	onOpenDataLocation () {
 		Renderer.send('pathOpen', commonStore.dataPath);
 	};
+
+	onConfirmStorage (onConfirm: () => void) {
+		popupStore.open('confirm', {
+			data: {
+				title: translate('commonAreYouSure'),
+				text: translate('popupSettingsOnboardingLocalOnlyWarningText'),
+				textConfirm: translate('popupSettingsOnboardingLocalOnlyWarningConfirm'),
+				onConfirm,
+			},
+		});
+	};
+    
+    onChangeDataLocation () {
+        // console.log("change");
+        // console.log(commonStore);
+        // console.log(commonStore.config.mode);
+        // console.log(this);
+        // Renderer.send('pathChange', commonStore.dataPath);
+        const onConfirm = () => {
+            const cb = (paths: string[]) => {
+                // console.log(paths);
+                Renderer.send('setUserDataPath', paths[0]);
+                // commonStore.dataPathSet(paths[0]+"/data");
+                // this.onChange("userPath", paths[0]);
+                // this.onChange('userPath', UtilCommon.getElectron().defaultPath());
+                // Renderer.send('appOnLoad');
+                Renderer.send('exit', "", true);
+            }
+			Action.openDir({}, cb);
+		};
+        // this.onConfirmStorage(onConfirm);
+		if (commonStore.config.mode == I.NetworkMode.Local) {
+			this.onConfirmStorage(onConfirm);
+		} else {
+			onConfirm();
+		};
+    };
 
 	getSuffix () {
 		return UtilData.isLocalOnly() ? 'LocalOnly' : '';
